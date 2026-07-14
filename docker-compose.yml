@@ -1,0 +1,84 @@
+version: "3.9"
+
+networks:
+  notif-net:
+    driver: bridge
+
+volumes:
+  postgres-data:
+
+services:
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: notif-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: notification_db
+      POSTGRES_USER: notification_user
+      POSTGRES_PASSWORD: notification_pass
+    ports:
+      # Host 5433 -> container 5432. Non-default host port so this never
+      # collides with a Postgres instance you may already have running locally.
+      - "5433:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U notification_user -d notification_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks:
+      - notif-net
+
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.6.1
+    container_name: notif-zookeeper
+    restart: unless-stopped
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    ports:
+      - "2181:2181"
+    networks:
+      - notif-net
+
+  kafka:
+    image: confluentinc/cp-kafka:7.6.1
+    container_name: notif-kafka
+    restart: unless-stopped
+    depends_on:
+      - zookeeper
+    ports:
+      # Exposed to the host so the Spring Boot app (run outside Docker
+      # during development) can connect via localhost:9092.
+      - "9092:9092"
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      # Two listeners: one for inter-container traffic (kafka:29092),
+      # one for host traffic (localhost:9092). Without this split, a client
+      # running on the host cannot resolve the "kafka" hostname.
+      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:29092,PLAINTEXT_HOST://0.0.0.0:9092
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:29092,PLAINTEXT_HOST://localhost:9092
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "false"
+    networks:
+      - notif-net
+
+  kafka-ui:
+    image: provectuslabs/kafka-ui:latest
+    container_name: notif-kafka-ui
+    restart: unless-stopped
+    depends_on:
+      - kafka
+    ports:
+      - "5050:8080"
+    environment:
+      KAFKA_CLUSTERS_0_NAME: local
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:29092
+      KAFKA_CLUSTERS_0_ZOOKEEPER: zookeeper:2181
+    networks:
+      - notif-net

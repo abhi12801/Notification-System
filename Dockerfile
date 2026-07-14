@@ -1,0 +1,23 @@
+# --- Build stage: compile with Maven, cache dependencies separately from source ---
+# Pinned Maven image (not the Maven Wrapper) so the build has no dependency on
+# fetching a wrapper jar over the network at build time.
+FROM maven:3.9.9-eclipse-temurin-17-alpine AS build
+WORKDIR /app
+
+COPY pom.xml .
+RUN mvn dependency:go-offline -B
+
+COPY src ./src
+RUN mvn clean package -DskipTests -B
+
+# --- Runtime stage: slim JRE-only image, no build tooling shipped ---
+FROM eclipse-temurin:17-jre-alpine
+WORKDIR /app
+
+RUN addgroup -S app && adduser -S app -G app
+USER app
+
+COPY --from=build /app/target/notification-system-*.jar app.jar
+
+EXPOSE 8080
+ENTRYPOINT ["java", "-jar", "app.jar"]
