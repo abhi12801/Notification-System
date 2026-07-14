@@ -111,7 +111,12 @@ attempt — initial or retry). See
 [`V1__create_notification_schema.sql`](src/main/resources/db/migration/V1__create_notification_schema.sql)
 for the full DDL and index list, and
 [`V2__add_optimistic_locking.sql`](src/main/resources/db/migration/V2__add_optimistic_locking.sql)
-for the `version` column.
+for the `version` column, and
+[`V3__widen_counters_to_integer.sql`](src/main/resources/db/migration/V3__widen_counters_to_integer.sql)
+for why `retry_count`/`attempt_number` are `INTEGER` rather than `SMALLINT`
+(Hibernate's schema validator expects `INTEGER` for a `java.lang.Integer`
+field by default — the initial `SMALLINT` choice was corrected once
+schema-validation caught the mismatch on startup).
 
 ```
 ┌───────────────────────────────────┐
@@ -123,7 +128,7 @@ for the `version` column.
 │     message            VARCHAR(1000)│
 │     status             VARCHAR(10) │  CHECK (PENDING|SENT|FAILED|RETRYING)
 │     schedule_time      TIMESTAMP   │  captured, not actively scheduled
-│     retry_count        SMALLINT    │  CHECK (0-3)
+│     retry_count        INTEGER     │  CHECK (0-3)
 │     last_attempted_at  TIMESTAMP   │  drives the 2-minute retry cooldown
 │     processed_at       TIMESTAMP   │  set when status becomes SENT
 │     created_at         TIMESTAMP   │
@@ -138,7 +143,7 @@ for the `version` column.
 ├───────────────────────────────────┤
 │ PK  id                BIGSERIAL    │
 │ FK  notification_id    BIGINT      │  ON DELETE CASCADE
-│     attempt_number     SMALLINT    │
+│     attempt_number     INTEGER     │
 │     attempted_at       TIMESTAMP   │
 │     outcome            VARCHAR(10) │  CHECK (SENT|FAILED)
 │     failure_reason     VARCHAR(500)│
