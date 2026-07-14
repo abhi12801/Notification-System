@@ -22,7 +22,7 @@ public class CreateNotificationRequest {
 
     @NotBlank(message = "message must not be blank")
     @Size(max = 1000, message = "message must not exceed 1000 characters")
-    @NoRepeatedWords
+    @NoRepeatedWords(maxConsecutive = 3)
     private String message;
 
     @FutureOrPresent(message = "scheduleTime must not be in the past")
