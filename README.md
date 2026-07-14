@@ -14,7 +14,7 @@ the system of record; both run locally via Docker Compose.
 | Persistence         | PostgreSQL 16 + Spring Data JPA | Mandatory |
 | Schema management   | Flyway (`ddl-auto=validate`)     | Versioned, auditable schema instead of Hibernate inferring DDL |
 | Messaging           | Apache Kafka                    | Preferred approach in the spec over an in-memory queue |
-| Build               | Gradle (wrapper checked in)      | No local Gradle/Maven install required — `./gradlew` bootstraps itself |
+| Build               | Maven                           | Mandatory |
 | Mapping             | MapStruct                       | Compile-time DTO↔Entity mapping, mapping bugs caught at build time |
 | Docs                | springdoc-openapi / Swagger UI  | Executable API documentation |
 
@@ -241,10 +241,9 @@ in [`postman/Smart-Notification-System.postman_collection.json`](postman/Smart-N
 
 ## How to Run Locally
 
-**Prerequisites:** JDK 17, Docker Desktop. Nothing else needs to be
-pre-installed — the Gradle Wrapper (`gradlew`/`gradlew.bat`, checked into
-the repo) downloads the exact Gradle version this project needs on first
-run.
+**Prerequisites:** JDK 17, Docker Desktop. Maven isn't required on PATH —
+IntelliJ ships its own, or use the project's own build once dependencies are
+cached (see below).
 
 **1. Start infrastructure:**
 ```bash
@@ -261,13 +260,11 @@ docker compose ps   # postgres, zookeeper, kafka, kafka-ui should all be up
 
 **2. Run the app:**
 ```bash
-./gradlew bootRun        # macOS/Linux/Git Bash
-gradlew.bat bootRun       # Windows PowerShell/cmd
+mvn spring-boot:run
 ```
 or run `NotificationSystemApplication` directly from your IDE (defaults to
-the `dev` profile — IntelliJ auto-detects `build.gradle` and imports it, no
-Maven/Gradle install needed on your machine). On startup, Flyway logs
-confirm the schema was created (`Migrating schema "public" to version "2"`).
+the `dev` profile). On startup, Flyway logs confirm the schema was created
+(`Migrating schema "public" to version "2"`).
 
 **3. Verify:**
 - `GET http://localhost:8080/actuator/health` → `{"status":"UP"}`
@@ -280,40 +277,16 @@ confirm the schema was created (`Migrating schema "public" to version "2"`).
 **Tear down:** `docker compose down -v` (also wipes the Postgres volume).
 
 **Note:** this build was authored without a persistent Docker daemon
-available in the dev environment. `./gradlew compileJava`, `./gradlew test`
-(12/12 passing), and `./gradlew bootJar` were all run and verified from that
-environment; the Docker Compose file and Flyway migrations were reviewed and
-validated (`docker compose config`) but not executed end-to-end there. Run
-the steps above locally to confirm — nothing in the design depends on
-anything beyond standard Spring Boot + Postgres + Kafka wiring.
-
-> **Note on tooling:** the assessment lists Maven as a mandatory technology.
-> This project was built with Maven originally and later switched to Gradle
-> at the candidate's request. If Maven is a hard requirement for submission,
-> say so and it'll be switched back — see "Why Gradle" below for what
-> changed and why the switch is low-risk either way.
-
-### Why Gradle (and what changed)
-
-Only the build tooling changed — no source code, package structure, or
-dependency versions were touched. `build.gradle`/`settings.gradle` declare
-the exact same dependencies as the original `pom.xml` (Spring Boot 3.3,
-MapStruct, Lombok, Flyway, Testcontainers, springdoc). The Gradle Wrapper
-(`gradlew`/`gradlew.bat` + `gradle/wrapper/`) is checked in, generated from
-an official Gradle 8.10 distribution (not hand-written), so it behaves
-identically to a real `gradle` install with zero setup on any machine.
-
-| Maven command | Gradle equivalent |
-|---|---|
-| `mvn spring-boot:run` | `./gradlew bootRun` |
-| `mvn compile` | `./gradlew compileJava` |
-| `mvn test` | `./gradlew test` |
-| `mvn package` | `./gradlew bootJar` |
-| `mvn clean` | `./gradlew clean` |
+available in the dev environment. `mvn compile`, `mvn package`, and the full
+unit test suite (12 tests, `mvn test`) were run and pass; the Docker Compose
+file and Flyway migrations were reviewed and validated (`docker compose
+config`) but not executed end-to-end from that environment. Run the steps
+above locally to confirm — nothing in the design depends on anything beyond
+standard Spring Boot + Postgres + Kafka wiring.
 
 ## Testing
 
-`./gradlew test` runs 12 unit tests:
+`mvn test` runs 12 unit tests:
 - `NoRepeatedWordsValidatorTest` — the spec's own repeated-word examples,
   plus case-insensitivity and a broken-run edge case
 - `RetryEligibilityValidatorTest` — all three retry rules independently,
