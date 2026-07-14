@@ -11,12 +11,26 @@
   "item": [
     {
       "name": "Create Notification",
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "// scheduleTime must be present/future per @FutureOrPresent; computing it here",
+              "// instead of hardcoding a date keeps this request valid no matter when it's run.",
+              "const future = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().slice(0, 19);",
+              "pm.variables.set('futureScheduleTime', future);"
+            ]
+          }
+        }
+      ],
       "request": {
         "method": "POST",
         "header": [{ "key": "Content-Type", "value": "application/json" }],
         "body": {
           "mode": "raw",
-          "raw": "{\n  \"userId\": 101,\n  \"type\": \"EMAIL\",\n  \"message\": \"Welcome User\",\n  \"scheduleTime\": \"2026-05-28T10:00:00\"\n}"
+          "raw": "{\n  \"userId\": 101,\n  \"type\": \"EMAIL\",\n  \"message\": \"Welcome User\",\n  \"scheduleTime\": \"{{futureScheduleTime}}\"\n}"
         },
         "url": { "raw": "{{baseUrl}}/api/notifications", "host": ["{{baseUrl}}"], "path": ["api", "notifications"] }
       },
