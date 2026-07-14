@@ -1,0 +1,161 @@
+{
+  "info": {
+    "name": "Smart Notification Management System",
+    "description": "All implemented APIs for the Smart Notification Management System assessment.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:8080" },
+    { "key": "notificationId", "value": "1" }
+  ],
+  "item": [
+    {
+      "name": "Create Notification",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"userId\": 101,\n  \"type\": \"EMAIL\",\n  \"message\": \"Welcome User\",\n  \"scheduleTime\": \"2026-05-28T10:00:00\"\n}"
+        },
+        "url": { "raw": "{{baseUrl}}/api/notifications", "host": ["{{baseUrl}}"], "path": ["api", "notifications"] }
+      },
+      "response": [
+        {
+          "name": "201 Created",
+          "status": "Created",
+          "code": 201,
+          "body": "{\n  \"success\": true,\n  \"data\": {\n    \"id\": 1,\n    \"userId\": 101,\n    \"type\": \"EMAIL\",\n    \"message\": \"Welcome User\",\n    \"status\": \"PENDING\",\n    \"scheduleTime\": \"2026-05-28T10:00:00\",\n    \"retryCount\": 0,\n    \"lastAttemptedAt\": null,\n    \"processedAt\": null,\n    \"createdAt\": \"2026-07-14T18:00:00\",\n    \"updatedAt\": \"2026-07-14T18:00:00\"\n  },\n  \"message\": \"Notification created and queued for processing\",\n  \"timestamp\": \"2026-07-14T18:00:00\"\n}"
+        },
+        {
+          "name": "400 Validation Failed (repeated word)",
+          "status": "Bad Request",
+          "code": 400,
+          "body": "{\n  \"success\": false,\n  \"errorCode\": \"VALIDATION_FAILED\",\n  \"message\": \"Request validation failed\",\n  \"details\": [\"message: message must not contain a word repeated more than 3 times consecutively\"],\n  \"timestamp\": \"2026-07-14T18:00:00\"\n}"
+        },
+        {
+          "name": "409 Duplicate Notification",
+          "status": "Conflict",
+          "code": 409,
+          "body": "{\n  \"success\": false,\n  \"errorCode\": \"DUPLICATE_NOTIFICATION\",\n  \"message\": \"An identical notification for this user was already created within the last 5 minutes\",\n  \"timestamp\": \"2026-07-14T18:00:00\"\n}"
+        }
+      ]
+    },
+    {
+      "name": "Create Notification - Invalid (repeated word example from spec)",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"userId\": 101,\n  \"type\": \"SMS\",\n  \"message\": \"hello hello hello hello\"\n}"
+        },
+        "url": { "raw": "{{baseUrl}}/api/notifications", "host": ["{{baseUrl}}"], "path": ["api", "notifications"] }
+      },
+      "response": []
+    },
+    {
+      "name": "Get Notifications (paginated, filterable)",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "{{baseUrl}}/api/notifications?page=0&size=10&status=FAILED&type=EMAIL",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "notifications"],
+          "query": [
+            { "key": "page", "value": "0" },
+            { "key": "size", "value": "10" },
+            { "key": "status", "value": "FAILED", "description": "optional: PENDING | SENT | FAILED | RETRYING" },
+            { "key": "type", "value": "EMAIL", "description": "optional: EMAIL | SMS | PUSH" },
+            { "key": "sort", "value": "createdAt,desc", "disabled": true }
+          ]
+        }
+      },
+      "response": [
+        {
+          "name": "200 OK",
+          "status": "OK",
+          "code": 200,
+          "body": "{\n  \"success\": true,\n  \"data\": {\n    \"content\": [\n      {\n        \"id\": 1,\n        \"userId\": 101,\n        \"type\": \"EMAIL\",\n        \"message\": \"Welcome User\",\n        \"status\": \"FAILED\",\n        \"retryCount\": 0,\n        \"lastAttemptedAt\": \"2026-07-14T18:00:05\",\n        \"processedAt\": null,\n        \"createdAt\": \"2026-07-14T18:00:00\",\n        \"updatedAt\": \"2026-07-14T18:00:05\"\n      }\n    ],\n    \"page\": 0,\n    \"size\": 10,\n    \"totalElements\": 1,\n    \"totalPages\": 1,\n    \"last\": true\n  },\n  \"timestamp\": \"2026-07-14T18:00:10\"\n}"
+        }
+      ]
+    },
+    {
+      "name": "Get Notification Details",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "{{baseUrl}}/api/notifications/{{notificationId}}",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "notifications", "{{notificationId}}"]
+        }
+      },
+      "response": [
+        {
+          "name": "200 OK",
+          "status": "OK",
+          "code": 200,
+          "body": "{\n  \"success\": true,\n  \"data\": {\n    \"id\": 1,\n    \"userId\": 101,\n    \"type\": \"EMAIL\",\n    \"message\": \"Welcome User\",\n    \"status\": \"SENT\",\n    \"retryCount\": 0,\n    \"lastAttemptedAt\": \"2026-07-14T18:00:05\",\n    \"processedAt\": \"2026-07-14T18:00:05\",\n    \"createdAt\": \"2026-07-14T18:00:00\",\n    \"updatedAt\": \"2026-07-14T18:00:05\"\n  },\n  \"timestamp\": \"2026-07-14T18:00:10\"\n}"
+        },
+        {
+          "name": "404 Not Found",
+          "status": "Not Found",
+          "code": 404,
+          "body": "{\n  \"success\": false,\n  \"errorCode\": \"NOTIFICATION_NOT_FOUND\",\n  \"message\": \"Notification not found with id: 9999\",\n  \"timestamp\": \"2026-07-14T18:00:10\"\n}"
+        }
+      ]
+    },
+    {
+      "name": "Retry Failed Notification",
+      "request": {
+        "method": "POST",
+        "url": {
+          "raw": "{{baseUrl}}/api/notifications/{{notificationId}}/retry",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "notifications", "{{notificationId}}", "retry"]
+        }
+      },
+      "response": [
+        {
+          "name": "200 OK - Retry accepted",
+          "status": "OK",
+          "code": 200,
+          "body": "{\n  \"success\": true,\n  \"data\": {\n    \"id\": 1,\n    \"userId\": 101,\n    \"type\": \"EMAIL\",\n    \"message\": \"Welcome User\",\n    \"status\": \"RETRYING\",\n    \"retryCount\": 1,\n    \"lastAttemptedAt\": \"2026-07-14T18:05:00\",\n    \"processedAt\": null,\n    \"createdAt\": \"2026-07-14T18:00:00\",\n    \"updatedAt\": \"2026-07-14T18:05:00\"\n  },\n  \"message\": \"Retry accepted and queued for processing\",\n  \"timestamp\": \"2026-07-14T18:05:00\"\n}"
+        },
+        {
+          "name": "409 Retry Not Allowed (cooldown)",
+          "status": "Conflict",
+          "code": 409,
+          "body": "{\n  \"success\": false,\n  \"errorCode\": \"RETRY_NOT_ALLOWED\",\n  \"message\": \"Retry allowed only after 2 minutes since the last attempt; 1 minute(s) have passed\",\n  \"timestamp\": \"2026-07-14T18:00:30\"\n}"
+        },
+        {
+          "name": "409 Retry Not Allowed (max attempts)",
+          "status": "Conflict",
+          "code": 409,
+          "body": "{\n  \"success\": false,\n  \"errorCode\": \"RETRY_NOT_ALLOWED\",\n  \"message\": \"Maximum retry attempts (3) already reached\",\n  \"timestamp\": \"2026-07-14T18:10:00\"\n}"
+        },
+        {
+          "name": "409 Retry Not Allowed (wrong status)",
+          "status": "Conflict",
+          "code": 409,
+          "body": "{\n  \"success\": false,\n  \"errorCode\": \"RETRY_NOT_ALLOWED\",\n  \"message\": \"Only FAILED notifications can be retried. Current status: PENDING\",\n  \"timestamp\": \"2026-07-14T18:00:02\"\n}"
+        }
+      ]
+    },
+    {
+      "name": "Dashboard Statistics",
+      "request": {
+        "method": "GET",
+        "url": { "raw": "{{baseUrl}}/api/dashboard", "host": ["{{baseUrl}}"], "path": ["api", "dashboard"] }
+      },
+      "response": [
+        {
+          "name": "200 OK",
+          "status": "OK",
+          "code": 200,
+          "body": "{\n  \"success\": true,\n  \"data\": {\n    \"totalNotifications\": 42,\n    \"sentCount\": 28,\n    \"failedCount\": 9,\n    \"pendingCount\": 2,\n    \"retryingCount\": 3,\n    \"typeWiseStats\": {\n      \"EMAIL\": 20,\n      \"SMS\": 15,\n      \"PUSH\": 7\n    }\n  },\n  \"timestamp\": \"2026-07-14T18:15:00\"\n}"
+        }
+      ]
+    }
+  ]
+}
