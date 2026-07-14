@@ -36,6 +36,15 @@ springdoc:
   api-docs:
     path: /api-docs
 
+notification:
+  rules:
+    duplicate-window-minutes: 5
+    retry-cooldown-minutes: 2
+    max-retry-count: 3
+    random-failure-rate: 0.30
+  kafka:
+    topic: notification-events
+
 logging:
   level:
     root: INFO
