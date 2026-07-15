@@ -36,11 +36,22 @@ public interface NotificationRepository extends JpaRepository<Notification, Long
             @Param("type") NotificationType type,
             Pageable pageable);
 
-    /** Backs the dashboard's per-status counts; each call is a single index-only scan. */
-    long countByStatus(NotificationStatus status);
+    /**
+     * Backs the dashboard's status breakdown in one round trip. Only
+     * statuses actually present in the table produce a row -- a status with
+     * zero notifications is simply absent, not returned as (status, 0).
+     */
+    @Query("select n.status as status, count(n) as count from Notification n group by n.status")
+    List<StatusCountProjection> countGroupedByStatus();
 
+    /** Same shape, grouped by type instead of status. */
     @Query("select n.type as type, count(n) as count from Notification n group by n.type")
     List<TypeCountProjection> countGroupedByType();
+
+    interface StatusCountProjection {
+        NotificationStatus getStatus();
+        Long getCount();
+    }
 
     interface TypeCountProjection {
         NotificationType getType();

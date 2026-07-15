@@ -206,6 +206,20 @@ pipeline as the initial attempt, so channel-dispatch + failure-simulation
 logic exists in exactly one place (`NotificationProcessor`), not duplicated
 between the create flow and the retry flow.
 
+**Dashboard statistics** — `GET /api/dashboard` runs exactly **2** database
+queries regardless of data volume: one `GROUP BY status`, one `GROUP BY
+type`, both index-backed. `totalNotifications` is derived by summing the
+status-group counts in the service layer rather than issuing a separate
+`count(*)` — every notification has exactly one status, so the sum is
+always exact and it saves a 3rd round trip. A status/type with zero rows
+simply doesn't appear in the GROUP BY result set (SQL doesn't invent
+zero-count rows) — `DashboardServiceImpl` defaults each field with
+`getOrDefault(status, 0L)` to handle that correctly. This replaced an
+earlier version issuing 6 separate queries (`count()` + 4×`countByStatus()`
++ 1 grouped type query) — same result, in 2 round trips instead of 6, with
+each GROUP BY query also reading a single consistent snapshot instead of
+6 independently-timed ones.
+
 ## Queue Processing Approach
 
 Kafka producer (`KafkaNotificationQueuePublisher`) → topic `notification-events`
