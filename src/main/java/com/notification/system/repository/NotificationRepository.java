@@ -5,17 +5,13 @@ import com.notification.system.enums.NotificationStatus;
 import com.notification.system.enums.NotificationType;
 import java.time.LocalDateTime;
 import java.util.List;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
-/**
- * JpaSpecificationExecutor backs the Module 7 list API, where status/type
- * filters are optional and combine freely — Specifications avoid a
- * combinatorial explosion of derived query methods (one per filter combo).
- */
-public interface NotificationRepository
-        extends JpaRepository<Notification, Long>, JpaSpecificationExecutor<Notification> {
+public interface NotificationRepository extends JpaRepository<Notification, Long> {
 
     /**
      * Backs the duplicate-notification business rule: same user, same type,
@@ -24,6 +20,21 @@ public interface NotificationRepository
      */
     boolean existsByUserIdAndTypeAndMessageAndCreatedAtAfter(
             Long userId, NotificationType type, String message, LocalDateTime createdSince);
+
+    /**
+     * Backs GET /api/notifications. status/type are optional — a null
+     * parameter makes its (:param IS NULL OR ...) clause a no-op, so this
+     * one query serves all four filter combinations (none/status/type/both).
+     */
+    @Query("""
+            SELECT n FROM Notification n
+            WHERE (:status IS NULL OR n.status = :status)
+              AND (:type IS NULL OR n.type = :type)
+            """)
+    Page<Notification> findByOptionalStatusAndType(
+            @Param("status") NotificationStatus status,
+            @Param("type") NotificationType type,
+            Pageable pageable);
 
     /** Backs the dashboard's per-status counts; each call is a single index-only scan. */
     long countByStatus(NotificationStatus status);

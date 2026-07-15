@@ -13,14 +13,12 @@ import com.notification.system.mapper.NotificationMapper;
 import com.notification.system.queue.NotificationQueueMessage;
 import com.notification.system.queue.NotificationQueuePublisher;
 import com.notification.system.repository.NotificationRepository;
-import com.notification.system.repository.NotificationSpecifications;
 import com.notification.system.service.NotificationService;
 import com.notification.system.validation.RetryEligibilityValidator;
 import java.time.LocalDateTime;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -69,11 +67,8 @@ public class NotificationServiceImpl implements NotificationService {
 
     @Override
     public Page<NotificationResponse> list(NotificationStatus status, NotificationType type, Pageable pageable) {
-        Specification<Notification> spec = Specification
-                .where(NotificationSpecifications.hasStatus(status))
-                .and(NotificationSpecifications.hasType(type));
-
-        return notificationRepository.findAll(spec, pageable).map(notificationMapper::toResponse);
+        return notificationRepository.findByOptionalStatusAndType(status, type, pageable)
+                .map(notificationMapper::toResponse);
     }
 
     @Override

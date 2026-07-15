@@ -53,7 +53,7 @@ Controller  (NotificationController, DashboardController)
   ▼
 Service     (NotificationService, DashboardService)
   │              │
-  │              └─▶ Repository (Spring Data JPA + Specifications) ──▶ PostgreSQL
+  │              └─▶ Repository (Spring Data JPA + a single @Query) ──▶ PostgreSQL
   │
   └─▶ NotificationQueuePublisher (interface)
               │
@@ -88,7 +88,7 @@ src/main/java/com/notification/system/
 ├── dto/            request/ and response/ — API contracts, decoupled from entities
 ├── entity/         JPA entities (Notification, NotificationAttempt)
 ├── enums/          NotificationType, NotificationStatus, AttemptOutcome, AttemptTrigger
-├── repository/     Spring Data interfaces + Specifications for dynamic filtering
+├── repository/     Spring Data interfaces; optional list filters via one @Query
 ├── service/        interfaces (NotificationService, NotificationProcessor, DashboardService)
 ├── service/impl/   implementations
 ├── mapper/         Plain entity↔DTO mapping (Lombok builders, no codegen)
