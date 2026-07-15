@@ -15,7 +15,7 @@ the system of record; both run locally via Docker Compose.
 | Schema management   | Flyway (`ddl-auto=validate`)     | Versioned, auditable schema instead of Hibernate inferring DDL |
 | Messaging           | Apache Kafka                    | Preferred approach in the spec over an in-memory queue |
 | Build               | Maven                           | Mandatory |
-| Mapping             | MapStruct                       | Compile-time DTO↔Entity mapping, mapping bugs caught at build time |
+| Mapping             | Plain mapper class (Lombok builders) | Only two DTOs to map — a hand-written mapper is simpler to read and debug than configuring a mapping framework for this little surface area |
 | Docs                | springdoc-openapi / Swagger UI  | Executable API documentation |
 
 ## Assumptions & Scope Decisions
@@ -91,7 +91,7 @@ src/main/java/com/notification/system/
 ├── repository/     Spring Data interfaces + Specifications for dynamic filtering
 ├── service/        interfaces (NotificationService, NotificationProcessor, DashboardService)
 ├── service/impl/   implementations
-├── mapper/         MapStruct entity↔DTO mapping
+├── mapper/         Plain entity↔DTO mapping (Lombok builders, no codegen)
 ├── strategy/       NotificationChannelSender + per-type implementations (Email/Sms/Push)
 ├── queue/          NotificationQueuePublisher abstraction + message contract
 ├── queue/kafka/    Kafka-backed implementation of the publisher

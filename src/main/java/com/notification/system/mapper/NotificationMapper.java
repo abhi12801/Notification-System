@@ -3,24 +3,42 @@ package com.notification.system.mapper;
 import com.notification.system.dto.request.CreateNotificationRequest;
 import com.notification.system.dto.response.NotificationResponse;
 import com.notification.system.entity.Notification;
-import org.mapstruct.Mapper;
-import org.mapstruct.Mapping;
+import com.notification.system.enums.NotificationStatus;
+import org.springframework.stereotype.Component;
 
 /**
- * Compile-time generated mapping (no reflection at runtime, mapping errors
- * caught at build time instead of in production).
+ * Plain, hand-written entity <-> DTO mapping using the entities' existing
+ * Lombok builders. No codegen, no annotation-processor step -- for a
+ * two-DTO surface, a manual mapper is simpler to read and debug than
+ * configuring a mapping framework.
  */
-@Mapper(componentModel = "spring")
-public interface NotificationMapper {
+@Component
+public class NotificationMapper {
 
-    @Mapping(target = "id", ignore = true)
-    @Mapping(target = "status", constant = "PENDING")
-    @Mapping(target = "retryCount", constant = "0")
-    @Mapping(target = "lastAttemptedAt", ignore = true)
-    @Mapping(target = "processedAt", ignore = true)
-    @Mapping(target = "createdAt", ignore = true)
-    @Mapping(target = "updatedAt", ignore = true)
-    Notification toEntity(CreateNotificationRequest request);
+    public Notification toEntity(CreateNotificationRequest request) {
+        return Notification.builder()
+                .userId(request.getUserId())
+                .type(request.getType())
+                .message(request.getMessage())
+                .scheduleTime(request.getScheduleTime())
+                .status(NotificationStatus.PENDING)
+                .retryCount(0)
+                .build();
+    }
 
-    NotificationResponse toResponse(Notification notification);
+    public NotificationResponse toResponse(Notification notification) {
+        return NotificationResponse.builder()
+                .id(notification.getId())
+                .userId(notification.getUserId())
+                .type(notification.getType())
+                .message(notification.getMessage())
+                .status(notification.getStatus())
+                .scheduleTime(notification.getScheduleTime())
+                .retryCount(notification.getRetryCount())
+                .lastAttemptedAt(notification.getLastAttemptedAt())
+                .processedAt(notification.getProcessedAt())
+                .createdAt(notification.getCreatedAt())
+                .updatedAt(notification.getUpdatedAt())
+                .build();
+    }
 }
